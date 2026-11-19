@@ -127,7 +127,7 @@ button.google:disabled{opacity:.55}
 <div id="hud" class="hide"><b id="lname"></b><div id="bar"><i id="fill"></i></div><button id="pause" class="alt" aria-label="Pausar">II</button></div>
 <div id="home" class="scr show"><canvas id="hc" width="240" height="240" style="width:120px;height:120px"></canvas><h1>Órbita</h1><p id="hp"></p><button id="bPlay">Jogar</button><div class="row"><button id="bSk" class="alt">Skins</button><button id="bShop" class="alt">Loja</button></div><div class="row"><button id="bAch" class="alt">Conquistas</button><button id="bSt" class="alt">Estatísticas</button></div><button id="bNews" class="alt">Novidades <span id="newsBadge" class="news-tag">NOVO</span></button><button id="bAccount" class="alt">Minha conta</button><button id="bCfg" class="alt">Ajustes</button><button id="bCafe">☕ Me compre um café</button></div>
 <div id="news" class="scr"><h2>Novidades</h2><p class="fine">Histórico de atualizações do Órbita</p><div id="newsList"></div><button class="alt back" data-to="home">Voltar</button></div>
-<div id="account" class="scr"><h2>Minha conta</h2><div class="account-card"><b id="accountTitle">Sua conta Órbita</b><p id="accountStatus">Você ainda não entrou com uma conta Google.</p><p class="account-muted">Entre com Google para criar seu perfil Órbita na nuvem. O progresso do jogo continua salvo localmente neste momento.</p></div><button id="googleLogin" class="google">Entrar com Google</button><button id="googleLogout" class="alt hide">Sair da conta</button><p id="accountMessage" class="fine">O login exige que o jogo esteja hospedado em um domínio HTTPS autorizado.</p><button class="alt back" data-to="home">Voltar</button></div>
+<div id="account" class="scr"><h2>Minha conta</h2><div class="account-card"><b id="accountTitle">Sua conta Órbita</b><p id="accountStatus">Você ainda não entrou com uma conta Google.</p><p class="account-muted">Seu progresso será sincronizado automaticamente quando você entrar com Google. Moedas, fases, skins, conquistas e estatísticas ficam vinculadas à sua conta.</p><p id="cloudSyncStatus" class="fine">Aguardando conexão com a nuvem.</p></div><button id="googleLogin" class="google">Entrar com Google</button><button id="googleLogout" class="alt hide">Sair da conta</button><p id="accountMessage" class="fine">O login exige que o jogo esteja hospedado em um domínio HTTPS autorizado.</p><button class="alt back" data-to="home">Voltar</button></div>
 <div id="modes" class="scr"><h2>Modos</h2>
 <button data-m="camp">Campanha<small id="m_camp"></small></button>
 <button data-m="inf">Infinito<small id="m_inf"></small></button>
@@ -248,7 +248,8 @@ try{const raw=localStorage.getItem('orbita3'),sgv=localStorage.getItem('orbita3_
 while(S.oc.length<SK.length)S.oc.push(0);while(S.done.length<150)S.done.push(0);while(S.ot.length<TR.length)S.ot.push(0);while(S.rl.length<RL.length)S.rl.push(0);while(S.stars.length<150)S.stars.push(0);
 const RF=f=>S.rel>=0&&RX[S.rel].includes(f);
 const save=()=>{try{const j=JSON.stringify(S),old=localStorage.getItem('orbita3'),os=localStorage.getItem('orbita3_sg');
- if(old&&os&&sg(old)===os)localStorage.setItem('orbita3_pv',JSON.stringify({d:old,s:os}));localStorage.setItem('orbita3',j);localStorage.setItem('orbita3_sg',sg(j))}catch(e){}};
+ if(old&&os&&sg(old)===os)localStorage.setItem('orbita3_pv',JSON.stringify({d:old,s:os}));localStorage.setItem('orbita3',j);localStorage.setItem('orbita3_sg',sg(j));localStorage.setItem('orbita3_saved_at',String(Date.now()))}catch(e){}
+ try{if(window.orbitaQueueCloudSave)window.orbitaQueueCloudSave()}catch(e){} };
 const GP=[{dpr:2,nbg:16,pf:1,shk:1,glow:1,bgd:1,hatch:1,fancy:1},{dpr:1.5,nbg:6,pf:.5,shk:.5,glow:0,bgd:1,hatch:1,fancy:1},{dpr:1,nbg:0,pf:0,shk:0,glow:0,bgd:0,hatch:0,fancy:0}];
 let GF=GP[S.gfx]||GP[0];
 const vib=n=>{try{navigator.vibrate&&navigator.vibrate(n)}catch(e){}};
@@ -691,23 +692,46 @@ function sanity(){const n=(v,lo,hi)=>Math.max(lo,Math.min(hi,+v||0));S.v=5;S.coi
  S.ch=n(S.ch,0,SK.length-1)|0;S.tr=n(S.tr,0,TR.length-1)|0;if(!S.oc[S.ch])S.ch=0;if(!S.ot[S.tr])S.tr=0;if(S.rel>=0&&!S.rl[S.rel])S.rel=-1;
  for(const m in S.hi)S.hi[m]=n(S.hi[m],0,99999)|0;for(const k in S.st)S.st[k]=n(S.st[k],0,1e9);S.dev.spd=n(S.dev.spd,.25,2);
  if(!S.dev.used){if(S.rl[6]&&!(lvc()>=150&&S.hi.inf>=200))S.rl[6]=0;if(S.oc[10]&&lvc()<150)S.oc[10]=0}save()}
+const CLOUD_KEYS=['done','stars','wu','ch','tr','oc','ot','rl','rel','shield','coins','hi','day','ach','st'];
+window.orbitaExportCloudProgress=()=>{const out={};for(const k of CLOUD_KEYS)out[k]=S[k];return JSON.parse(JSON.stringify(out))};
+window.orbitaImportCloudProgress=data=>{if(!data||typeof data!=='object')return false;for(const k of CLOUD_KEYS){if(data[k]!==undefined)S[k]=data[k]}sanity();goHome();return true};
 resize();sanity();goHome();requestAnimationFrame(frame);
 })();</script>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
 const firebaseConfig={apiKey:'AIzaSyDlwFK801_mLGyNHvQlkAWbwFdFti_60Oc',authDomain:'orbita-dev-9892d.firebaseapp.com',projectId:'orbita-dev-9892d',storageBucket:'orbita-dev-9892d.firebasestorage.app',messagingSenderId:'818908708138',appId:'1:818908708138:web:9f3e41b2ffaa488bb93253',measurementId:'G-X1W40QZN6N'};
-const $id=id=>document.getElementById(id);let auth=null,db=null;
+const $id=id=>document.getElementById(id);let auth=null,db=null,currentUser=null,cloudReady=false,saveTimer=null;
 function accountMessage(message){const el=$id('accountMessage');if(el)el.textContent=message}
+function cloudMessage(message){const el=$id('cloudSyncStatus');if(el)el.textContent=message}
 function renderUser(user){const status=$id('accountStatus'),title=$id('accountTitle'),login=$id('googleLogin'),logout=$id('googleLogout');if(!status)return;
- if(user){title.textContent='Conta conectada';status.textContent=(user.displayName||'Jogador Órbita')+' · '+(user.email||'');login.classList.add('hide');logout.classList.remove('hide');accountMessage('Sua conta Google está conectada. O progresso ainda fica salvo neste aparelho; a sincronização na nuvem será uma etapa separada.')}else{title.textContent='Sua conta Órbita';status.textContent='Você ainda não entrou com uma conta Google.';login.classList.remove('hide');logout.classList.add('hide');accountMessage('O login exige que o jogo esteja hospedado em um domínio HTTPS autorizado.')}}
-try{const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
- $id('googleLogin').addEventListener('click',async()=>{const btn=$id('googleLogin');btn.disabled=true;accountMessage('Abrindo o acesso do Google...');try{const result=await signInWithPopup(auth,provider);const user=result.user;await setDoc(doc(db,'players',user.uid),{uid:user.uid,displayName:user.displayName||'',email:user.email||'',photoURL:user.photoURL||'',lastLoginAt:serverTimestamp()},{merge:true});accountMessage('Login realizado com sucesso!')}catch(error){console.error('Órbita Google login:',error);accountMessage(error.code==='auth/unauthorized-domain'?'Este domínio ainda não está autorizado no Firebase Authentication.':error.code==='auth/popup-blocked'?'O navegador bloqueou a janela de login. Permita pop-ups e tente novamente.':'Não foi possível entrar: '+(error.message||error.code||'erro desconhecido'))}finally{btn.disabled=false}});
- $id('googleLogout').addEventListener('click',async()=>{try{await signOut(auth);accountMessage('Você saiu da conta.')}catch(error){accountMessage('Não foi possível sair: '+(error.message||error.code))}});
- onAuthStateChanged(auth,renderUser);
-}catch(error){console.error('Órbita Firebase initialization:',error);accountMessage('Não foi possível iniciar o Firebase. Confira a conexão e a configuração do projeto.')}
+ if(user){title.textContent='Conta conectada';status.textContent=(user.displayName||'Jogador Órbita')+' · '+(user.email||'');login.classList.add('hide');logout.classList.remove('hide');accountMessage('Conta Google conectada. Verificando seu progresso na nuvem...')}
+ else{title.textContent='Sua conta Órbita';status.textContent='Você ainda não entrou com uma conta Google.';login.classList.remove('hide');logout.classList.add('hide');accountMessage('Entre com Google para sincronizar seu progresso.');cloudMessage('Entre na sua conta para ativar a sincronização.')}}
+async function uploadProgress(user){const payload=window.orbitaExportCloudProgress?.();if(!payload)throw new Error('O jogo ainda não disponibilizou os dados do progresso.');await setDoc(doc(db,'playerProgress',user.uid),{data:payload,updatedAt:serverTimestamp()},{merge:true})}
+window.orbitaQueueCloudSave=()=>{if(!currentUser||!cloudReady)return;if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{const user=currentUser;if(!user||!cloudReady)return;try{await uploadProgress(user);cloudMessage('☁️ Progresso sincronizado.');}catch(error){console.error('Órbita cloud save:',error);cloudMessage('Não foi possível sincronizar agora. O progresso continua salvo neste aparelho.')}},1000)};
+try{
+ const app=initializeApp(firebaseConfig);auth=getAuth(app);db=getFirestore(app);const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
+ $id('googleLogin').addEventListener('click',async()=>{const btn=$id('googleLogin');btn.disabled=true;accountMessage('Abrindo o acesso do Google...');try{const result=await signInWithPopup(auth,provider);const user=result.user;await setDoc(doc(db,'players',user.uid),{uid:user.uid,displayName:user.displayName||'',email:user.email||'',photoURL:user.photoURL||'',lastLoginAt:serverTimestamp()},{merge:true});accountMessage('Login realizado. Preparando a sincronização...')}catch(error){console.error('Órbita Google login:',error);accountMessage(error.code==='auth/unauthorized-domain'?'Este domínio ainda não está autorizado no Firebase Authentication.':error.code==='auth/popup-blocked'?'O navegador bloqueou a janela de login. Permita pop-ups e tente novamente.':'Não foi possível entrar: '+(error.message||error.code||'erro desconhecido'))}finally{btn.disabled=false}});
+ $id('googleLogout').addEventListener('click',async()=>{try{if(saveTimer)clearTimeout(saveTimer);cloudReady=false;currentUser=null;await signOut(auth);accountMessage('Você saiu da conta. O progresso local continua neste aparelho.')}catch(error){accountMessage('Não foi possível sair: '+(error.message||error.code))}});
+ onAuthStateChanged(auth,async user=>{
+  currentUser=user;cloudReady=false;if(saveTimer)clearTimeout(saveTimer);renderUser(user);
+  if(!user)return;
+  cloudMessage('☁️ Procurando um progresso salvo na nuvem...');
+  try{
+   const ref=doc(db,'playerProgress',user.uid),snap=await getDoc(ref);
+   if(snap.exists()&&snap.data().data){
+    const remote=snap.data(),remoteTime=remote.updatedAt?.toMillis?.()||0;
+    let localTime=0;try{localTime=Number(localStorage.getItem('orbita3_saved_at')||0)}catch(e){}
+    if(localTime>remoteTime&&localTime>0){await uploadProgress(user);cloudMessage('☁️ Progresso deste aparelho enviado para a nuvem.')}
+    else{window.orbitaImportCloudProgress?.(remote.data);cloudMessage('☁️ Progresso recuperado da sua conta Google.')}
+   }else{await uploadProgress(user);cloudMessage('☁️ Primeiro progresso salvo na nuvem!')}
+   cloudReady=true;
+   accountMessage('Conta Google conectada. A sincronização automática está ativa.');
+  }catch(error){console.error('Órbita cloud sync:',error);cloudReady=false;cloudMessage('Falha ao sincronizar. Seu progresso local foi preservado.');accountMessage('Login conectado, mas a sincronização falhou: '+(error.code||error.message||'erro desconhecido'))}
+ });
+}catch(error){console.error('Órbita Firebase initialization:',error);accountMessage('Não foi possível iniciar o Firebase. Confira a conexão e a configuração do projeto.');cloudMessage('Sincronização indisponível no momento.')}
 </script>
 </body>
 </html>
