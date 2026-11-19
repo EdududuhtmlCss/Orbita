@@ -240,6 +240,9 @@ let phx=0;
 const MN={inf:'Infinito',time:'Contra-relógio',zen:'Zen'};
 const D=()=>({v:5,done:Array(150).fill(0),stars:Array(150).fill(0),wu:1,ch:0,tr:0,oc:SK.map((_,i)=>i?0:1),ot:TR.map((_,i)=>i?0:1),rl:RL.map(()=>0),rel:-1,shield:0,coins:0,hi:{inf:0,time:0,zen:0},mute:0,nomus:0,gfx:((navigator.deviceMemory&&navigator.deviceMemory<=2)||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4))?1:0,dev:{god:0,spd:1,fps:0,used:0,tamper:0},day:'',ach:{},st:{runs:0,deaths:0,coins:0,time:0,bestT:0}});
 let S=D();
+// Capture local-save metadata before startup validation writes a fresh timestamp.
+const ORBITA_HAD_LOCAL_SAVE=!!localStorage.getItem('orbita3');
+const ORBITA_LOCAL_SAVED_AT=Number(localStorage.getItem('orbita3_saved_at')||0);
 try{const raw=localStorage.getItem('orbita3'),sgv=localStorage.getItem('orbita3_sg');if(raw){let o=JSON.parse(raw);
  if(sgv?sg(raw)!==sgv:(o.v|0)>=5){try{const pv=JSON.parse(localStorage.getItem('orbita3_pv')||'null');if(pv&&sg(pv.d)===pv.s)o=JSON.parse(pv.d)}catch(q){}o.dev=Object.assign({},o.dev,{tamper:((o.dev&&o.dev.tamper)|0)+1,used:1})}
  if(!o.v){try{localStorage.setItem('orbita3_bak',raw)}catch(e){}
@@ -441,8 +444,8 @@ function hit(){if(inv>0||S.dev.god)return;
  die()}
 cv.addEventListener('pointerdown',e=>{e.preventDefault();if(st==='play'){lane^=1;SND.tap();vib(8)}},{passive:false});
 addEventListener('keydown',e=>{if(e.code==='Space'&&st==='play'){e.preventDefault();lane^=1}});
-const ORBITA_VERSION='1.3';
-const ORBITA_RELEASES=[{version:'1.3',date:'19/11/2026',items:['Painel de novidades adicionado ao menu principal.','Histórico de versões organizado em um só lugar.','Área de conta preparada para login com Google.']}];
+const ORBITA_VERSION='1.4';
+const ORBITA_RELEASES=[{version:'1.4',date:'19/11/2026',items:['Sincronização de progresso com a conta Google.','Recuperação do progresso salvo na nuvem em outro aparelho.','Salvamento automático de moedas, fases, skins, conquistas e estatísticas.']},{version:'1.3',date:'19/11/2026',items:['Painel de novidades adicionado ao menu principal.','Histórico de versões organizado em um só lugar.','Login com Google e perfil de jogador na nuvem.']}];
 function renderNews(){const box=$('newsList');box.innerHTML='';for(const release of ORBITA_RELEASES){const card=document.createElement('section');card.className='news-card';const head=document.createElement('div');head.className='news-version';const v=document.createElement('b');v.textContent='Órbita v'+release.version;head.appendChild(v);const date=document.createElement('span');date.className='account-muted';date.textContent=release.date;head.appendChild(date);card.appendChild(head);const ul=document.createElement('ul');release.items.forEach(item=>{const li=document.createElement('li');li.textContent=item;ul.appendChild(li)});card.appendChild(ul);box.appendChild(card)}}
 function markNewsSeen(){try{localStorage.setItem('orbita_news_seen',ORBITA_VERSION)}catch(e){}$('newsBadge').classList.add('hide')}
 function checkNews(){let seen='';try{seen=localStorage.getItem('orbita_news_seen')||''}catch(e){}$('newsBadge').classList.toggle('hide',seen===ORBITA_VERSION)}
@@ -723,8 +726,8 @@ try{
    const ref=doc(db,'playerProgress',user.uid),snap=await getDoc(ref);
    if(snap.exists()&&snap.data().data){
     const remote=snap.data(),remoteTime=remote.updatedAt?.toMillis?.()||0;
-    let localTime=0;try{localTime=Number(localStorage.getItem('orbita3_saved_at')||0)}catch(e){}
-    if(localTime>remoteTime&&localTime>0){await uploadProgress(user);cloudMessage('☁️ Progresso deste aparelho enviado para a nuvem.')}
+    const localTime=ORBITA_LOCAL_SAVED_AT;
+    if(ORBITA_HAD_LOCAL_SAVE&&localTime>remoteTime&&localTime>0){await uploadProgress(user);cloudMessage('☁️ Progresso deste aparelho enviado para a nuvem.')}
     else{window.orbitaImportCloudProgress?.(remote.data);cloudMessage('☁️ Progresso recuperado da sua conta Google.')}
    }else{await uploadProgress(user);cloudMessage('☁️ Primeiro progresso salvo na nuvem!')}
    cloudReady=true;
